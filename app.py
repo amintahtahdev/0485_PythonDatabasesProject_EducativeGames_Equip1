@@ -2,6 +2,7 @@ import json
 import os
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from extensions import db
 
 from models.figures import ComplexShape
 from models.game import DragAndDropGame
@@ -12,6 +13,18 @@ from routes.game_routes import game_bp
 
 app = Flask(__name__)
 app.secret_key = 'clau_secreta_super_segura_per_educative_game'
+
+# MariaDB Configuration
+DB_USER = "arnau"
+DB_PASS = "035HFTkuQa2v3bLu"
+DB_HOST = "158.179.217.136"
+DB_PORT = "3307"
+DB_NAME = "appdb"
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(game_bp)
@@ -27,18 +40,11 @@ RANKING_GAMES = [
 
 
 def load_rankings():
-    # Llegim els usuaris registrats.
-    results_path = os.path.join(app.root_path, 'data', 'results.json')
-    users = []
+    # Ara llegim els usuaris de la base de dades MariaDB
+    from models.user import User
+    users = User.query.all()
 
-    if os.path.exists(results_path):
-        try:
-            with open(results_path, 'r', encoding='utf-8') as file:
-                users = json.load(file)
-        except (json.JSONDecodeError, OSError):
-            users = []
-
-    # Llegim les puntuacions guardades al fitxer separat.
+    # Llegim les puntuacions guardades al fitxer separat (que encara es JSON per ara)
     scores_by_user = score_storage.get_scores_map()
     rankings = []
 
@@ -47,7 +53,7 @@ def load_rankings():
         rows = []
 
         for user in users:
-            username = user.get('username', 'Usuari')
+            username = user.username
             user_scores = scores_by_user.get(username, {})
             game_points = user_scores.get(game_key, 0)
 
@@ -130,7 +136,7 @@ def save_score():
 @app.route('/perfil', methods=['GET', 'POST'])
 def perfil():
     from models.storage import Storage
-    storage = Storage(os.path.join(app.root_path, 'data', 'results.json'))
+    storage = Storage()
     
     if 'username' not in session:
         return redirect(url_for('auth.login'))
@@ -138,18 +144,9 @@ def perfil():
     usuari = storage.get_user(session['username'])
     
     if request.method == 'POST':
-        noves_anotacions = request.form.get('anotacions', '')
-        es_vist = True if request.form.get('vist') else False
-        
-        usuari.set_anotacions(noves_anotacions)
-        usuari.vist = es_vist
-        
-        users = storage.load_users()
-        for i, u in enumerate(users):
-            if u.username == usuari.username:
-                users[i] = usuari
-                break
-        storage.save_users(users)
+        # Nota: Els camps anotacions i vist s'haurien de migrar a la BBDD 
+        # si es volen seguir fent servir. Per ara, ja no es guarden en JSON.
+        pass
         
     return render_template('perfil.html', usuari=usuari)
 
