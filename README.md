@@ -6,7 +6,6 @@ Aplicacion web Flask de juegos educativos con autenticacion, perfil de usuario y
 
 - Usuarios y perfil: `data/results.json`
 - Ranking y mejores puntuaciones: MongoDB externo
-- Migracion inicial: si `data/scores.json` existe y la coleccion esta vacia, se importan sus datos automaticamente la primera vez que arranca la app con MongoDB configurado
 
 ## Configuracion de base de datos
 
@@ -30,4 +29,4 @@ pip install -r requirements.txt
 
 - La coleccion `game_scores` se usa automaticamente si no indicas otra.
 - El backend mantiene la misma API interna (`get_scores_map` y `update_user_score`), asi que no ha sido necesario tocar frontend ni rutas de ranking.
-- Si no configuras `MONGODB_URI`, el ranking cae a almacenamiento local en `data/scores.json`.
+- El ranking requiere `MONGODB_URI` valido; ya no existe guardado local de puntuaciones.
